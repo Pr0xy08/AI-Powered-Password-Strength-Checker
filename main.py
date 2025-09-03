@@ -1,22 +1,40 @@
 import pandas as pd
 import string
 import math
-from zxcvbn import zxcvbn  # maybe use - also maybe use PQI (password Quality Indicator)
+from zxcvbn import zxcvbn  # TODO maybe use - also maybe use PQI (password Quality Indicator)
+import re
 
 
-def shannon_entropy(pwd):
+def shannon_entropy(pwd):  # function that measures shannon entropy
     prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
-    return -sum(p * math.log2(p) for p in prob) # Shannon Index
+    return -sum(p * math.log2(p) for p in prob)  # Shannon Index
 
 
-def char_diversity(pwd: str):
+def char_diversity(pwd: str):  # function that measures character diversity using simpson index
     prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
-    return 1 - sum(f ** 2 for f in prob)  # Simpson Index
+    return 1 - sum(f ** 2 for f in prob)
+
+
+def has_sequential_chars(pwd: str, seq_len: int = 3) -> int:  # function returns 1 is a sequence is found (123)
+    sequences = [
+        string.ascii_lowercase,
+        string.ascii_uppercase,
+        string.digits
+    ]
+    for seq in sequences:
+        for i in range(len(seq) - seq_len + 1):
+            if seq[i:i + seq_len] in pwd:
+                return 1
+    return 0
+
+
+def has_repeated_chars(pwd: str) -> int: # function returns 1 if same character is repeated 3+ times consecutively
+    return 1 if re.search(r"(.)\1{2,}", pwd) else 0
 
 
 # Read the CSV safely
 df = pd.read_csv(
-    "data.csv",  # path to your downloaded CSV
+    "data.csv",
     on_bad_lines="skip",  # skip any malformed lines
     encoding="utf-8",  # ensure proper character handling
     quotechar='"',  # handle quotes inside passwords
@@ -32,7 +50,7 @@ df = df.drop_duplicates(subset=["password"])
 # reset index
 df = df.reset_index(drop=True)
 
-# General Features
+# General Features - TODO Create Functions for each of these
 df["length"] = df["password"].apply(len)  # creates new column for length of each password
 df["lowercase_count"] = df["password"].apply(
     lambda f: sum(1 for s in f if s.islower()))  # creates new column for lowercase alphabetic character count
@@ -52,16 +70,19 @@ df["digit_ratio"] = df["digit_count"] / df["length"]
 df["special_ratio"] = df["special_count"] / df["length"]
 df["unique_ratio"] = df["unique_count"] / df["length"]
 
-# Randomness
-df["shannon_entropy"] = df["password"].apply(shannon_entropy)  # creates a new column providing shannon entropy for each of the passwords
-df["char_diversity"] = df["password"].apply(char_diversity)
+# Randomness Features
+df["shannon_entropy"] = df["password"].apply(
+    shannon_entropy)  # creates a new column providing shannon entropy for each of the passwords
+df["char_diversity"] = df["password"].apply(
+    char_diversity)  # provide a measure of character diversity using Simpson Index
 
 # Pattern Features
-
+df["has_sequential_chars"] = df["password"].apply(has_sequential_chars) # 1 if a sequence has been found in the password (abc)
+df["has_repeated_chars"] = df["password"].apply(has_repeated_chars) # 1 if repeated characters are found in the string (aaa)
 
 # display results
 pd.set_option("display.max_columns", None)  # displays each column used for the time being
 # print(df.head())  # first few rows
 # print(df.info())  # info
 # print(df.isnull().sum())  # missing values
-print(df.loc[[0]])  # prints a specific entry
+print(df.loc[[16]])  # prints a specific entry
