@@ -28,8 +28,35 @@ def has_sequential_chars(pwd: str, seq_len: int = 3) -> int:  # function returns
     return 0
 
 
-def has_repeated_chars(pwd: str) -> int: # function returns 1 if same character is repeated 3+ times consecutively
+def has_repeated_chars(pwd: str) -> int:  # function returns 1 if same character is repeated 3+ times consecutively
     return 1 if re.search(r"(.)\1{2,}", pwd) else 0
+
+
+def contains_year(pwd: str) -> int:  # returns 1 if a year is present in the password
+    return 1 if re.search(r"(19[5-9]\d|20[0-4]\d)", pwd) else 0
+
+
+def char_type(c: str) -> str:
+    if c.islower(): return "lower"
+    if c.isupper(): return "upper"
+    if c.isdigit(): return "digit"
+    return "special"
+
+
+def first_char_type(pwd: str) -> str:
+    return char_type(pwd[0])
+
+
+def last_char_type(pwd: str) -> str:
+    return char_type(pwd[-1])
+
+
+with open("10k-most-common.txt", encoding="utf-8") as f:
+    common_passwords = set(line.strip() for line in f if line.strip())
+
+
+def is_common_password(pwd: str) -> int: # checks to see if password given is in top 10k password list
+    return 1 if pwd in common_passwords else 0
 
 
 # Read the CSV safely
@@ -77,12 +104,18 @@ df["char_diversity"] = df["password"].apply(
     char_diversity)  # provide a measure of character diversity using Simpson Index
 
 # Pattern Features
-df["has_sequential_chars"] = df["password"].apply(has_sequential_chars) # 1 if a sequence has been found in the password (abc)
-df["has_repeated_chars"] = df["password"].apply(has_repeated_chars) # 1 if repeated characters are found in the string (aaa)
+df["has_sequential_chars"] = df["password"].apply(
+    has_sequential_chars)  # 1 if a sequence has been found in the password (abc)
+df["has_repeated_chars"] = df["password"].apply(
+    has_repeated_chars)  # 1 if repeated characters are found in the string (aaa)
+df["contains_year"] = df["password"].apply(contains_year)
+df["first_char_type"] = df["password"].apply(first_char_type)  # returns the type of the first character
+df["last_char_type"] = df["password"].apply(last_char_type)  # returns the type of last character
+df["is_common_password"] = df["password"].apply(is_common_password)
 
 # display results
 pd.set_option("display.max_columns", None)  # displays each column used for the time being
 # print(df.head())  # first few rows
 # print(df.info())  # info
 # print(df.isnull().sum())  # missing values
-print(df.loc[[16]])  # prints a specific entry
+print(df.loc[[0]])  # prints a specific entry
