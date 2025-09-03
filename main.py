@@ -32,6 +32,10 @@ def has_repeated_chars(pwd: str) -> int:  # function returns 1 if same character
     return 1 if re.search(r"(.)\1{2,}", pwd) else 0
 
 
+def repeated_char_count(pwd: str) -> int:  # counts number of repeated characters
+    return len(pwd) - len(set(pwd))
+
+
 def contains_year(pwd: str) -> int:  # returns 1 if a year is present in the password
     return 1 if re.search(r"(19[5-9]\d|20[0-4]\d)", pwd) else 0
 
@@ -51,11 +55,16 @@ def last_char_type(pwd: str) -> str:
     return char_type(pwd[-1])
 
 
+def longest_digit_seq(pwd: str) -> int: # measures the longest sequence of digits in the password
+    seqs = re.findall(r"\d+", pwd)
+    return max((len(s) for s in seqs), default=0)
+
+
 with open("10k-most-common.txt", encoding="utf-8") as f:
     common_passwords = set(line.strip() for line in f if line.strip())
 
 
-def is_common_password(pwd: str) -> int: # checks to see if password given is in top 10k password list
+def is_common_password(pwd: str) -> int:  # checks to see if password given is in top 10k password list
     return 1 if pwd in common_passwords else 0
 
 
@@ -77,6 +86,8 @@ df = df.drop_duplicates(subset=["password"])
 # reset index
 df = df.reset_index(drop=True)
 
+# TODO maybe add (has_mixed_case) (has_alnum_mix) (normalized_entropy) (char_type_changes)
+
 # General Features - TODO Create Functions for each of these
 df["length"] = df["password"].apply(len)  # creates new column for length of each password
 df["lowercase_count"] = df["password"].apply(
@@ -89,6 +100,7 @@ df["special_count"] = df["password"].apply(lambda f: sum(
     1 for s in f if s in string.punctuation))  # creates new column for count of number of special characters
 df["unique_count"] = df["password"].apply(
     lambda f: len(set(f)))  # creates a new column that counts the number of unique characters
+df["repeated_char_count"] = df["password"].apply(repeated_char_count)
 
 # Ratio Features
 df["lowercase_ratio"] = df["lowercase_count"] / df["length"]
@@ -112,6 +124,7 @@ df["contains_year"] = df["password"].apply(contains_year)
 df["first_char_type"] = df["password"].apply(first_char_type)  # returns the type of the first character
 df["last_char_type"] = df["password"].apply(last_char_type)  # returns the type of last character
 df["is_common_password"] = df["password"].apply(is_common_password)
+df["longest_digit_seq"] = df["password"].apply(longest_digit_seq)
 
 # display results
 pd.set_option("display.max_columns", None)  # displays each column used for the time being
