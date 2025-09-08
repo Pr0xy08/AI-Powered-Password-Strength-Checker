@@ -10,6 +10,14 @@ def shannon_entropy(pwd):  # function that measures shannon entropy
     return -sum(p * math.log2(p) for p in prob)  # Shannon Index
 
 
+def normalised_entropy(pwd: str) -> float:
+    if len(pwd) == 0:
+        return 0.0
+    prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
+    shannon = -sum(p * math.log2(p) for p in prob)
+    return shannon / len(pwd)
+
+
 def char_diversity(pwd: str):  # function that measures character diversity using simpson index
     prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
     return 1 - sum(f ** 2 for f in prob)
@@ -32,6 +40,14 @@ def has_repeated_chars(pwd: str) -> int:  # function returns 1 if same character
     return 1 if re.search(r"(.)\1{2,}", pwd) else 0
 
 
+def is_mixed_case(pwd: str) -> int:
+    return int(any(c.islower() for c in pwd) and any(c.isupper() for c in pwd))
+
+
+def is_alphanum(pwd: str) -> int:  # has mixed letters and digits
+    return int(any(c.isalpha() for c in pwd) and any(c.isdigit() for c in pwd))
+
+
 def repeated_char_count(pwd: str) -> int:  # counts number of repeated characters
     return len(pwd) - len(set(pwd))
 
@@ -47,6 +63,19 @@ def char_type(c: str) -> str:
     return "special"
 
 
+def char_type_changes(pwd: str) -> int:  # counts number of changes of char type
+    if len(pwd) < 2:
+        return 0
+    changes = 0
+    prev_type = char_type(pwd[0])
+    for c in pwd[1:]:
+        curr_type = char_type(c)
+        if curr_type != prev_type:
+            changes += 1
+        prev_type = curr_type
+    return changes
+
+
 def first_char_type(pwd: str) -> str:
     return char_type(pwd[0])
 
@@ -55,7 +84,7 @@ def last_char_type(pwd: str) -> str:
     return char_type(pwd[-1])
 
 
-def longest_digit_seq(pwd: str) -> int: # measures the longest sequence of digits in the password
+def longest_digit_seq(pwd: str) -> int:  # measures the longest sequence of digits in the password
     seqs = re.findall(r"\d+", pwd)
     return max((len(s) for s in seqs), default=0)
 
@@ -114,18 +143,21 @@ df["shannon_entropy"] = df["password"].apply(
     shannon_entropy)  # creates a new column providing shannon entropy for each of the passwords
 df["char_diversity"] = df["password"].apply(
     char_diversity)  # provide a measure of character diversity using Simpson Index
+df["normalised_entropy"] = df["password"].apply(normalised_entropy)
 
 # Pattern Features
 df["has_sequential_chars"] = df["password"].apply(
     has_sequential_chars)  # 1 if a sequence has been found in the password (abc)
 df["has_repeated_chars"] = df["password"].apply(
     has_repeated_chars)  # 1 if repeated characters are found in the string (aaa)
+df["is_mixed_case"] = df["password"].apply(is_mixed_case)
+df["is_alphanum"] = df["password"].apply(is_alphanum)
 df["contains_year"] = df["password"].apply(contains_year)
 df["first_char_type"] = df["password"].apply(first_char_type)  # returns the type of the first character
 df["last_char_type"] = df["password"].apply(last_char_type)  # returns the type of last character
 df["is_common_password"] = df["password"].apply(is_common_password)
 df["longest_digit_seq"] = df["password"].apply(longest_digit_seq)
-
+df["char_type_changes"] = df["password"].apply(char_type_changes)
 # display results
 pd.set_option("display.max_columns", None)  # displays each column used for the time being
 # print(df.head())  # first few rows
