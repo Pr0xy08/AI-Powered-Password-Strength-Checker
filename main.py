@@ -1,34 +1,53 @@
+"""
+Password Strength Feature Engineering Script
+--------------------------------------------
+This script extracts features from a dataset of passwords in order to
+train a machine learning model for password strength classification.
+
+Features cover:
+- Length and character composition
+- Entropy and randomness measures
+- Pattern detection (sequences, repeats, years, etc.)
+- Heuristics (mixed case, alphanumeric mix, common passwords, etc.)
+"""
+
 import pandas as pd
 import string
 import math
-from zxcvbn import zxcvbn  # TODO maybe use - also maybe use PQI (password Quality Indicator)
 import re
+from zxcvbn import zxcvbn  # Optional: could be used later
 
 
-def shannon_entropy(pwd):  # function that measures shannon entropy
+# -----------------------
+# Feature Extraction Utils
+# -----------------------
+
+def shannon_entropy(pwd: str) -> float:
+    """Compute Shannon entropy of a password."""
+    if not pwd:
+        return 0.0
     prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
-    return -sum(p * math.log2(p) for p in prob)  # Shannon Index
+    return -sum(p * math.log2(p) for p in prob)
 
 
 def normalised_entropy(pwd: str) -> float:
-    if len(pwd) == 0:
+    """Shannon entropy divided by length (entropy density)."""
+    if not pwd:
+        return 0.0
+    return shannon_entropy(pwd) / len(pwd)
+
+
+def char_diversity(pwd: str) -> float:
+    """Measure character diversity using Simpson Index."""
+    if not pwd:
         return 0.0
     prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
-    shannon = -sum(p * math.log2(p) for p in prob)
-    return shannon / len(pwd)
+    return 1 - sum(p ** 2 for p in prob)
 
 
-def char_diversity(pwd: str):  # function that measures character diversity using simpson index
-    prob = [pwd.count(c) / len(pwd) for c in set(pwd)]
-    return 1 - sum(f ** 2 for f in prob)
-
-
-def has_sequential_chars(pwd: str, seq_len: int = 3) -> int:  # function returns 1 is a sequence is found (123)
-    sequences = [
-        string.ascii_lowercase,
-        string.ascii_uppercase,
-        string.digits
-    ]
+def has_sequential_chars(pwd: str, seq_len: int = 3) -> int:
+    """Return 1 if a sequential run (e.g. 'abc', '123') is found."""
+    sequences = [string.ascii_lowercase, string.ascii_uppercase, string.digits]
     for seq in sequences:
         for i in range(len(seq) - seq_len + 1):
             if seq[i:i + seq_len] in pwd:
@@ -36,38 +55,47 @@ def has_sequential_chars(pwd: str, seq_len: int = 3) -> int:  # function returns
     return 0
 
 
-def has_repeated_chars(pwd: str) -> int:  # function returns 1 if same character is repeated 3+ times consecutively
-    return 1 if re.search(r"(.)\1{2,}", pwd) else 0
+def has_repeated_chars(pwd: str) -> int:
+    """Return 1 if any character is repeated 3+ times consecutively."""
+    return int(bool(re.search(r"(.)\1{2,}", pwd)))
 
 
-def is_mixed_case(pwd: str) -> int:
-    return int(any(c.islower() for c in pwd) and any(c.isupper() for c in pwd))
-
-
-def is_alphanum(pwd: str) -> int:  # has mixed letters and digits
-    return int(any(c.isalpha() for c in pwd) and any(c.isdigit() for c in pwd))
-
-
-def repeated_char_count(pwd: str) -> int:  # counts number of repeated characters
+def repeated_char_count(pwd: str) -> int:
+    """Count number of repeated characters (total minus unique)."""
     return len(pwd) - len(set(pwd))
 
 
-def contains_year(pwd: str) -> int:  # returns 1 if a year is present in the password
-    return 1 if re.search(r"(19[5-9]\d|20[0-4]\d)", pwd) else 0
+def is_mixed_case(pwd: str) -> int:
+    """Return 1 if the password contains both lowercase and uppercase letters."""
+    return int(any(c.islower() for c in pwd) and any(c.isupper() for c in pwd))
+
+
+def is_alphanum(pwd: str) -> int:
+    """Return 1 if the password contains both letters and digits."""
+    return int(any(c.isalpha() for c in pwd) and any(c.isdigit() for c in pwd))
+
+
+def contains_year(pwd: str) -> int:
+    """Return 1 if a plausible year (1950–2049) is present."""
+    return int(bool(re.search(r"(19[5-9]\d|20[0-4]\d)", pwd)))
 
 
 def char_type(c: str) -> str:
-    if c.islower(): return "lower"
-    if c.isupper(): return "upper"
-    if c.isdigit(): return "digit"
+    """Classify character as lower, upper, digit, or special."""
+    if c.islower():
+        return "lower"
+    if c.isupper():
+        return "upper"
+    if c.isdigit():
+        return "digit"
     return "special"
 
 
-def char_type_changes(pwd: str) -> int:  # counts number of changes of char type
+def char_type_changes(pwd: str) -> int:
+    """Count the number of times the character type changes in a password."""
     if len(pwd) < 2:
         return 0
-    changes = 0
-    prev_type = char_type(pwd[0])
+    changes, prev_type = 0, char_type(pwd[0])
     for c in pwd[1:]:
         curr_type = char_type(c)
         if curr_type != prev_type:
@@ -77,90 +105,93 @@ def char_type_changes(pwd: str) -> int:  # counts number of changes of char type
 
 
 def first_char_type(pwd: str) -> str:
-    return char_type(pwd[0])
+    """Return the type of the first character."""
+    return char_type(pwd[0]) if pwd else "none"
 
 
 def last_char_type(pwd: str) -> str:
-    return char_type(pwd[-1])
+    """Return the type of the last character."""
+    return char_type(pwd[-1]) if pwd else "none"
 
 
-def longest_digit_seq(pwd: str) -> int:  # measures the longest sequence of digits in the password
+def longest_digit_seq(pwd: str) -> int:
+    """Return the length of the longest continuous digit sequence."""
     seqs = re.findall(r"\d+", pwd)
     return max((len(s) for s in seqs), default=0)
 
 
+# -----------------------
+# Common Passwords Check
+# -----------------------
+
 with open("10k-most-common.txt", encoding="utf-8") as f:
-    common_passwords = set(line.strip() for line in f if line.strip())
+    COMMON_PASSWORDS = set(line.strip() for line in f if line.strip())
 
 
-def is_common_password(pwd: str) -> int:  # checks to see if password given is in top 10k password list
-    return 1 if pwd in common_passwords else 0
+def is_common_password(pwd: str) -> int:
+    """Return 1 if the password is in the top 10k common passwords list."""
+    return int(pwd in COMMON_PASSWORDS)
 
+
+# -----------------------
+# Data Loading & Cleaning
+# -----------------------
 
 # Read the CSV safely
 df = pd.read_csv(
     "data.csv",
-    on_bad_lines="skip",  # skip any malformed lines
-    encoding="utf-8",  # ensure proper character handling
-    quotechar='"',  # handle quotes inside passwords
-    dtype={"password": str, "strength": int}  # force types
+    on_bad_lines="skip",  # skip malformed lines
+    encoding="utf-8",  # proper character handling
+    quotechar='"',  # handle quoted passwords
+    dtype={"password": str, "strength": int}  # enforce types
 )
 
-# Remove rows with missing passwords, strength or formatting
-df = df.dropna(subset=["password", "strength"])
-# Remove rows with empty passwords
-df = df[df["password"].str.strip() != ""]
-# Removes any duplicates
-df = df.drop_duplicates(subset=["password"])
-# reset index
+# Basic cleaning
+df = df.dropna(subset=["password", "strength"])  # drop missing
+df = df[df["password"].str.strip() != ""]  # drop empty
+df = df.drop_duplicates(subset=["password"])  # remove duplicates
 df = df.reset_index(drop=True)
 
-# TODO maybe add (has_mixed_case) (has_alnum_mix) (normalized_entropy) (char_type_changes)
+# -----------------------
+# Feature Engineering
+# -----------------------
 
-# General Features - TODO Create Functions for each of these
-df["length"] = df["password"].apply(len)  # creates new column for length of each password
-df["lowercase_count"] = df["password"].apply(
-    lambda f: sum(1 for s in f if s.islower()))  # creates new column for lowercase alphabetic character count
-df["uppercase_count"] = df["password"].apply(
-    lambda f: sum(1 for s in f if s.isupper()))  # creates new column for uppercase alphabetic character count
-df["digit_count"] = df["password"].apply(
-    lambda f: sum(1 for s in f if s.isdigit()))  # creates new column for uppercase alphabetic character count
-df["special_count"] = df["password"].apply(lambda f: sum(
-    1 for s in f if s in string.punctuation))  # creates new column for count of number of special characters
-df["unique_count"] = df["password"].apply(
-    lambda f: len(set(f)))  # creates a new column that counts the number of unique characters
+# General counts
+df["length"] = df["password"].str.len()
+df["lowercase_count"] = df["password"].apply(lambda p: sum(c.islower() for c in p))
+df["uppercase_count"] = df["password"].apply(lambda p: sum(c.isupper() for c in p))
+df["digit_count"] = df["password"].apply(lambda p: sum(c.isdigit() for c in p))
+df["special_count"] = df["password"].apply(lambda p: sum(c in string.punctuation for c in p))
+df["unique_count"] = df["password"].apply(lambda p: len(set(p)))
 df["repeated_char_count"] = df["password"].apply(repeated_char_count)
 
-# Ratio Features
+# Ratios
 df["lowercase_ratio"] = df["lowercase_count"] / df["length"]
 df["uppercase_ratio"] = df["uppercase_count"] / df["length"]
 df["digit_ratio"] = df["digit_count"] / df["length"]
 df["special_ratio"] = df["special_count"] / df["length"]
 df["unique_ratio"] = df["unique_count"] / df["length"]
 
-# Randomness Features
-df["shannon_entropy"] = df["password"].apply(
-    shannon_entropy)  # creates a new column providing shannon entropy for each of the passwords
-df["char_diversity"] = df["password"].apply(
-    char_diversity)  # provide a measure of character diversity using Simpson Index
+# Randomness
+df["shannon_entropy"] = df["password"].apply(shannon_entropy)
 df["normalised_entropy"] = df["password"].apply(normalised_entropy)
+df["char_diversity"] = df["password"].apply(char_diversity)
 
-# Pattern Features
-df["has_sequential_chars"] = df["password"].apply(
-    has_sequential_chars)  # 1 if a sequence has been found in the password (abc)
-df["has_repeated_chars"] = df["password"].apply(
-    has_repeated_chars)  # 1 if repeated characters are found in the string (aaa)
+# Pattern-based
+df["has_sequential_chars"] = df["password"].apply(has_sequential_chars)
+df["has_repeated_chars"] = df["password"].apply(has_repeated_chars)
 df["is_mixed_case"] = df["password"].apply(is_mixed_case)
 df["is_alphanum"] = df["password"].apply(is_alphanum)
 df["contains_year"] = df["password"].apply(contains_year)
-df["first_char_type"] = df["password"].apply(first_char_type)  # returns the type of the first character
-df["last_char_type"] = df["password"].apply(last_char_type)  # returns the type of last character
+df["first_char_type"] = df["password"].apply(first_char_type)
+df["last_char_type"] = df["password"].apply(last_char_type)
 df["is_common_password"] = df["password"].apply(is_common_password)
 df["longest_digit_seq"] = df["password"].apply(longest_digit_seq)
 df["char_type_changes"] = df["password"].apply(char_type_changes)
-# display results
-pd.set_option("display.max_columns", None)  # displays each column used for the time being
-# print(df.head())  # first few rows
-# print(df.info())  # info
-# print(df.isnull().sum())  # missing values
-print(df.loc[[0]])  # prints a specific entry
+
+# -----------------------
+# Preview Results
+# -----------------------
+
+pd.set_option("display.max_columns", None)
+print(df.loc[[0]])  # print example row
