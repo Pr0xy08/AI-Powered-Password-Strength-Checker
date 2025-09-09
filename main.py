@@ -15,6 +15,9 @@ import pandas as pd
 import string
 import math
 import re
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from zxcvbn import zxcvbn  # Optional: could be used later
 
 
@@ -138,13 +141,10 @@ def is_common_password(pwd: str) -> int:
 # -----------------------
 
 # Read the CSV safely
-df = pd.read_csv(
-    "data.csv",
-    on_bad_lines="skip",  # skip malformed lines
-    encoding="utf-8",  # proper character handling
-    quotechar='"',  # handle quoted passwords
-    dtype={"password": str, "strength": int}  # enforce types
-)
+df = pd.read_csv("data2.csv", # https://github.com/binhbeinfosec/password-dataset
+                 delim_whitespace=True,
+                 names=["password", "strength"],
+                 header=0)  # skip first row as headers
 
 # Basic cleaning
 df = df.dropna(subset=["password", "strength"])  # drop missing
@@ -183,8 +183,8 @@ df["has_repeated_chars"] = df["password"].apply(has_repeated_chars)
 df["is_mixed_case"] = df["password"].apply(is_mixed_case)
 df["is_alphanum"] = df["password"].apply(is_alphanum)
 df["contains_year"] = df["password"].apply(contains_year)
-df["first_char_type"] = df["password"].apply(first_char_type)
-df["last_char_type"] = df["password"].apply(last_char_type)
+# df["first_char_type"] = df["password"].apply(first_char_type) # str type is not supported
+# df["last_char_type"] = df["password"].apply(last_char_type)
 df["is_common_password"] = df["password"].apply(is_common_password)
 df["longest_digit_seq"] = df["password"].apply(longest_digit_seq)
 df["char_type_changes"] = df["password"].apply(char_type_changes)
@@ -194,4 +194,36 @@ df["char_type_changes"] = df["password"].apply(char_type_changes)
 # -----------------------
 
 pd.set_option("display.max_columns", None)
-print(df.loc[[0]])  # print example row
+# print(df.loc[[0]])  # print example row
+
+# -----------------------
+# Model Training
+# -----------------------
+
+x = df.drop(columns=["password", "strength"])  # x is everything but password and the strength (the features)
+y = df["strength"]  # Y is the strength column
+
+
+X_train, X_test, y_train, y_test = train_test_split( # splits data into training and testing subsets
+    x, y, test_size=0.2, random_state=42, stratify=y
+)
+
+model = RandomForestClassifier( # ML Algorithm - Random Forest for non-linear classification
+    n_estimators=200,
+    random_state=42,
+    class_weight="balanced"  # useful if dataset is imbalanced
+)
+
+model.fit(X_train, y_train) # train model with data
+
+
+# -----------------------
+# Performance Testing
+# -----------------------
+
+y_pred = model.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+print(df.groupby("strength")["length"].describe())
+
