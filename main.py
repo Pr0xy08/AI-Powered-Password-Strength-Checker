@@ -12,13 +12,14 @@ Features cover:
 """
 
 import pandas as pd
+import matplotlib.pyplot as plt
 import string
 import math
 import re
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from zxcvbn import zxcvbn  # Optional: could be used later
+import lightgbm as lgb
+from imblearn.over_sampling import SMOTE
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 
 
 # -----------------------
@@ -107,16 +108,6 @@ def char_type_changes(pwd: str) -> int:
     return changes
 
 
-def first_char_type(pwd: str) -> str:
-    """Return the type of the first character."""
-    return char_type(pwd[0]) if pwd else "none"
-
-
-def last_char_type(pwd: str) -> str:
-    """Return the type of the last character."""
-    return char_type(pwd[-1]) if pwd else "none"
-
-
 def longest_digit_seq(pwd: str) -> int:
     """Return the length of the longest continuous digit sequence."""
     seqs = re.findall(r"\d+", pwd)
@@ -141,7 +132,7 @@ def is_common_password(pwd: str) -> int:
 # -----------------------
 
 # Read the CSV safely
-df = pd.read_csv("data2.csv", # https://github.com/binhbeinfosec/password-dataset
+df = pd.read_csv("data2.csv",  # https://github.com/binhbeinfosec/password-dataset
                  delim_whitespace=True,
                  names=["password", "strength"],
                  header=0)  # skip first row as headers
@@ -183,47 +174,68 @@ df["has_repeated_chars"] = df["password"].apply(has_repeated_chars)
 df["is_mixed_case"] = df["password"].apply(is_mixed_case)
 df["is_alphanum"] = df["password"].apply(is_alphanum)
 df["contains_year"] = df["password"].apply(contains_year)
-# df["first_char_type"] = df["password"].apply(first_char_type) # str type is not supported
-# df["last_char_type"] = df["password"].apply(last_char_type)
 df["is_common_password"] = df["password"].apply(is_common_password)
 df["longest_digit_seq"] = df["password"].apply(longest_digit_seq)
 df["char_type_changes"] = df["password"].apply(char_type_changes)
 
-# -----------------------
-# Preview Results
-# -----------------------
-
-pd.set_option("display.max_columns", None)
-# print(df.loc[[0]])  # print example row
-
-# -----------------------
-# Model Training
-# -----------------------
-
 x = df.drop(columns=["password", "strength"])  # x is everything but password and the strength (the features)
 y = df["strength"]  # Y is the strength column
 
-
-X_train, X_test, y_train, y_test = train_test_split( # splits data into training and testing subsets
+# -----------------------
+# Split the data
+# -----------------------
+X_train, X_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, random_state=42, stratify=y
 )
 
-model = RandomForestClassifier( # ML Algorithm - Random Forest for non-linear classification
-    n_estimators=200,
+# -----------------------
+# Apply SMOTE only to training data
+# -----------------------
+smote = SMOTE(random_state=42) # fixes class imbalance due to high amount of weak passwords the model might just predict weak most of the time
+X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
+
+
+# -----------------------
+# Train LightGBM
+# -----------------------
+lgb_model = lgb.LGBMClassifier(
+    n_estimators=500,  # more trees for better learning
+    learning_rate=0.05,  # step size shrinkage
+    max_depth=-1,  # let it choose automatically
+    num_leaves=64,  # controls complexity
+    class_weight="balanced",  # helps with class imbalance
     random_state=42,
-    class_weight="balanced"  # useful if dataset is imbalanced
+    n_jobs=-1  # use all CPU cores
 )
 
-model.fit(X_train, y_train) # train model with data
-
+lgb_model.fit(X_train_res, y_train_res)
 
 # -----------------------
 # Performance Testing
 # -----------------------
+y_pred_lgb = lgb_model.predict(X_test)
 
-y_pred = model.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("Classification Report:\n", classification_report(y_test, y_pred))
-print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
-print(df.groupby("strength")["length"].describe())
+print("LightGBM Accuracy:", accuracy_score(y_test, y_pred_lgb))
+print("LightGBM Classification Report:\n", classification_report(y_test, y_pred_lgb))
+print("LightGBM Confusion Matrix:\n", confusion_matrix(y_test, y_pred_lgb))
+print("LightGBM Macro F1:", f1_score(y_test, y_pred_lgb, average="macro"))
+
+"""
+# Optional: Feature Importance
+# After training LightGBM
+importances = lgb_model.feature_importances_
+features = X_train_res.columns
+
+# Sort feature importance
+fi = pd.DataFrame({"feature": features, "importance": importances})
+fi = fi.sort_values("importance", ascending=False)
+
+plt.figure(figsize=(10, 6))
+plt.barh(fi["feature"], fi["importance"])
+plt.gca().invert_yaxis()
+plt.title("LightGBM Feature Importance")
+plt.tight_layout()
+
+plt.savefig("feature_importance.png")  # save instead of show
+"""
 
