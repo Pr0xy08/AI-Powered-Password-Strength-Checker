@@ -132,7 +132,7 @@ def is_common_password(pwd: str) -> int:
 # -----------------------
 
 # Read the CSV safely
-df = pd.read_csv("data2.csv",  # https://github.com/binhbeinfosec/password-dataset
+df = pd.read_csv("data.csv",  # https://github.com/binhbeinfosec/password-dataset
                  delim_whitespace=True,
                  names=["password", "strength"],
                  header=0)  # skip first row as headers
@@ -211,7 +211,7 @@ lgb_model = lgb.LGBMClassifier(
 lgb_model.fit(X_train_res, y_train_res)
 
 # -----------------------
-# Performance Testing
+# Performance Results
 # -----------------------
 y_pred_lgb = lgb_model.predict(X_test)
 
