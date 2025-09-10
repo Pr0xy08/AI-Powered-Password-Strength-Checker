@@ -23,7 +23,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 
 # -----------------------
-# Feature Extraction Utils
+# Feature Extraction Funcs
 # -----------------------
 
 def shannon_entropy(pwd: str) -> float:
@@ -178,12 +178,13 @@ df["is_common_password"] = df["password"].apply(is_common_password)
 df["longest_digit_seq"] = df["password"].apply(longest_digit_seq)
 df["char_type_changes"] = df["password"].apply(char_type_changes)
 
-x = df.drop(columns=["password", "strength"])  # x is everything but password and the strength (the features)
-y = df["strength"]  # Y is the strength column
-
 # -----------------------
 # Split the data
 # -----------------------
+
+x = df.drop(columns=["password", "strength"])  # x is everything but password and the strength (the features)
+y = df["strength"]  # Y is the strength column
+
 X_train, X_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -194,9 +195,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 smote = SMOTE(random_state=42) # fixes class imbalance due to high amount of weak passwords the model might just predict weak most of the time
 X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
 
-
 # -----------------------
-# Train LightGBM
+# Train LightGBM Model
 # -----------------------
 lgb_model = lgb.LGBMClassifier(
     n_estimators=500,  # more trees for better learning
