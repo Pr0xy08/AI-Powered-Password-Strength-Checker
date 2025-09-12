@@ -127,6 +127,7 @@ def is_common_password(pwd: str) -> int:
 # Feature Engineering
 # -----------------------
 def extract_features(pwd: str) -> pd.DataFrame:
+    """extract the features of a given password, calls all above functions included"""
     # General 7
     features = {}
     features["length"] = len(pwd)
@@ -167,6 +168,7 @@ def extract_features(pwd: str) -> pd.DataFrame:
 # -----------------------
 def train_and_save(data_path="data.csv",
                    model_path="password_strength_classifier.pkl"):  # https://github.com/binhbeinfosec/password-dataset
+    """reads test date, apply feature extraction on test data, then trains data model with said data"""
     df = pd.read_csv(data_path, delim_whitespace=True, names=["password", "strength"], header=0)
     df = df.dropna(subset=["password", "strength"]).drop_duplicates(subset=["password"])
     df = df[df["password"].str.strip() != ""].reset_index(drop=True)
