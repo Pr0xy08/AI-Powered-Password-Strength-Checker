@@ -165,7 +165,8 @@ def extract_features(pwd: str) -> pd.DataFrame:
 # -----------------------
 # Train and save model
 # -----------------------
-def train_and_save(data_path="data.csv", model_path="password_strength_classifier.pkl"):
+def train_and_save(data_path="data.csv",
+                   model_path="password_strength_classifier.pkl"):  # https://github.com/binhbeinfosec/password-dataset
     df = pd.read_csv(data_path, delim_whitespace=True, names=["password", "strength"], header=0)
     df = df.dropna(subset=["password", "strength"]).drop_duplicates(subset=["password"])
     df = df[df["password"].str.strip() != ""].reset_index(drop=True)
@@ -201,4 +202,6 @@ def train_and_save(data_path="data.csv", model_path="password_strength_classifie
     # Save
     joblib.dump(model, model_path)
 
-train_and_save()
+
+if __name__ == "__main__":
+    train_and_save()
