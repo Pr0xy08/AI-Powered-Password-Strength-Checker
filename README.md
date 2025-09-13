@@ -42,7 +42,7 @@ I also incorporated structural features such as:
 
 Following this I begun the training of the first rendition of the model, this was using a Random Forest Algorithm via Scikit-learn (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) which makes use of the combination of multiple decision tree's to produce an output. After viewing the results of this It was clear something was wrong, this was due to the accuracy of the model being almost 100%. This was concerning as often it can infere that instead of traning itself the model finds a direct correclation within the dataset between the passwords and their strength. To solve this I instead adopted a different (but similar) dataset which incorporated more real-world data instead (https://github.com/binhbeinfosec/password-dataset). This was strucuted and classified the passwords in a very similar way (0, 1, 2) which was helpful as I didnt have to tweak my codebase too much. And after doing so and including some balancing to the data via SMOTE (https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html) I witnessed much better accuarcy results of around 70% which is more normal.
 
-Continuing on from this now that I had a trained model with a reliable dataset I though it would be benefical to test different machine learning algorithms to see if there was an improvement of accuracy. Here is a small outcome/report for each of the 4 chosen:
+Continuing on from this now that I had a trained model with a reliable dataset I though it would be benefical to test different machine learning algorithms to see if there was an improvement of accuracy. Here is a small outcome/report for each of the 4 chosen, with that being LightGBM being the most accurate with a Macro f1 Score of 74%:
 
 Random Forest:
 Accuracy - 0.92076
@@ -52,11 +52,25 @@ Recall    (0) - 0.94 (1) - 0.70 (2) - 0.79
 f1 score  (0) - 0.97 (1) - 0.46 (2) - 0.76
 
 LightGBM:
+Accuracy - 0.92733
+Macro f1 - 0.737
+Precision (0) - 0.99 (1) - 0.34 (2) - 0.74
+Recall    (0) - 0.94 (1) - 0.78 (2) - 0.81
+f1 score  (0) - 0.96 (1) - 0.47 (2) - 0.78
 
 XGBoost:
+Accuracy - 0.92076
+Macro f1 - 0.732
+Precision (0) - 0.99 (1) - 0.32 (2) - 0.75
+Recall    (0) - 0.93 (1) - 0.80 (2) - 0.82
+f1 score  (0) - 0.96 (1) - 0.46 (2) - 0.78
 
 CatBoost:
-
+Accuracy - 0.91883
+Macro f1 - 0.733
+Precision (0) - 1.00 (1) - 0.32 (2) - 0.75
+Recall    (0) - 0.93 (1) - 0.81 (2) - 0.83
+f1 score  (0) - 0.96 (1) - 0.45 (2) - 0.79
 
 # Features
 
