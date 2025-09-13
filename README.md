@@ -11,6 +11,38 @@ In response to these shortcomings, the paper proposed an alternative metric call
 However, despite these advancements, I found no significant work that leveraged machine learning as a core methodology for password strength evaluation. This observation inspired me to develop a machine learning–based password strength classification tool. The aim was not only to compare its performance against traditional methods like Shannon Entropy, but also to evaluate how it stands up to more modern approaches such as zxcvbn.
 
 # The Process
+As the goal of the project was to develop a model that classifies password strength, the only logical starting point was to find suitable training data. I came across a password strength classifier dataset on Kaggle (https://www.kaggle.com/datasets/bhavikbb/password-strength-classifier-dataset), which includes two columns: one for the password itself and one for its associated strength — weak (0), medium (1), or strong (2).
+
+Using this dataset, I first wrote simple code to read and sanitise the data. I then carried out feature engineering — the process of transforming raw data into interpretable features that can be used by a machine learning model during training. This can also be thought of as creating metadata about each password that provides additional context and supports pattern recognition for the model to improve its accuracy (generally the accuracy is tied to the number and complexity of features provided).
+
+The specific features I chose to extract for each password were:
+- Length
+- Lowercase character count
+- Uppercase character count
+- Digit count
+- Special character count
+- Unique character count
+- Repeated character count
+- Ratios for each of the above where relevant
+
+In addition to these, I included randomness features:
+- Shannon entropy
+- Normalised entropy
+- Character diversity
+
+I also incorporated structural features such as:
+- Presence of sequential characters
+- Presence of repeated characters
+- Whether the password is mixed case
+- Whether it is alphanumeric
+- Whether it contains a year
+- Whether it matches a common password (based on the top 10,000 most popular passwords)
+- The length of the longest sequence of digits
+- The number of character type transitions
+
+Following this I begun the training of the first rendition of the model, this was using a Random Forest Algorithm via Scikit-learn (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) which makes use of the combination of multiple decision tree's to produce an output.
+
+
 
 # Features
 
