@@ -44,7 +44,18 @@ Following this I begun the training of the first rendition of the model, this wa
 
 Continuing on from this now that I had a trained model with a reliable dataset I though it would be benefical to test different machine learning algorithms to see if there was an improvement of accuracy. Here is a small outcome/report for each of the 4 chosen:
 
-<img width="718" height="715" alt="image" src="https://github.com/user-attachments/assets/a169fc5c-7be6-40b4-9e6d-f97188cde762" />
+Random Forest:
+Accuracy - 0.92076
+Macro f1 - 0.727
+Precision (0) - 0.99 (1) - 0.42 (2) - 0.73
+Recall    (0) - 0.94 (1) - 0.70 (2) - 0.79
+f1 score  (0) - 0.97 (1) - 0.46 (2) - 0.76
+
+LightGBM:
+
+XGBoost:
+
+CatBoost:
 
 
 # Features
