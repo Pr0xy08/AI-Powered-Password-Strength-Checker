@@ -40,7 +40,7 @@ I also incorporated structural features such as:
 - The length of the longest sequence of digits
 - The number of character type transitions
 
-Following this I begun the training of the first rendition of the model, this was using a Random Forest Algorithm via Scikit-learn (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) which makes use of the combination of multiple decision tree's to produce an output.
+Following this I begun the training of the first rendition of the model, this was using a Random Forest Algorithm via Scikit-learn (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) which makes use of the combination of multiple decision tree's to produce an output. After viewing the results of this It was clear something was wrong, this was due to the accuracy of the model being almost 100%. This was concerning as often it can infere that instead of traning itself the model finds a direct correclation within the dataset between the passwords and their strength. To solve this I instead adopted a different (but similar) dataset which incorporated more real-world data instead (https://github.com/binhbeinfosec/password-dataset). This was strucuted and classified the passwords in a very similar way (0, 1, 2) which was helpful as I didnt have to tweak my codebase too much. And after doing so I witnessed much better accuarcy results of around 70% which is more normal.
 
 
 
