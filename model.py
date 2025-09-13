@@ -204,6 +204,24 @@ def train_and_save(data_path="data.csv",
     # Save
     joblib.dump(model, model_path)
 
+    """
+    # Optional - If uncommented will create a graph of feature importance, showing which features the model prioritses in training
+    importances = lgb_model.feature_importances_
+    features = X_train_res.columns
+
+    # Sort feature importance
+    fi = pd.DataFrame({"feature": features, "importance": importances})
+    fi = fi.sort_values("importance", ascending=False)
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(fi["feature"], fi["importance"])
+    plt.gca().invert_yaxis()
+    plt.title("LightGBM Feature Importance")
+    plt.tight_layout()
+
+    plt.savefig("feature_importance.png")  # saves figure
+    """
+
 
 if __name__ == "__main__":
     train_and_save()
