@@ -72,6 +72,7 @@ Precision (0) - 1.00 (1) - 0.32 (2) - 0.75
 Recall    (0) - 0.93 (1) - 0.81 (2) - 0.83
 f1 score  (0) - 0.96 (1) - 0.45 (2) - 0.79
 
+Finally after selecting LightGBM algorithm I made sure to save the model to easily retrieve it and then produced a simple frontend application that which takes a password as an input, extracts all the features required from the inputted password, then passes both the password and its features to the saved model in which the model returns a strength score of 0, 1 or 2.
 # Features
 
 # Usage Guide
