@@ -1,81 +1,159 @@
-# Table of Contents
+# AI-Powered Password Strength Checker
 
-# AI-Powered-Password-Strength-Checker
-A machine learning–based tool for estimating password strength. Building on my dissertation research, it addresses the shortcomings of traditional methods like Shannon Entropy by learning from real-world password patterns to provide more accurate, adaptive strength evaluation.
+A machine learning–based tool for estimating password strength.  
+Building on my dissertation research, this project addresses the shortcomings of traditional methods such as Shannon Entropy by learning from real-world password patterns to provide more accurate, adaptive strength evaluation.
 
-# The Problem
-During the course of my dissertation project (https://github.com/Pr0xy08/CSC3094-Password-Auditing-Tool), one of my goals was to measure password strength. In the process of conducting research, I came across a paper (https://ieeexplore.ieee.org/document/5635948) that highlighted several limitations of Shannon Entropy (a widely used metric for estimating password strength). The paper pointed out that Shannon Entropy relies heavily on mathematical randomness and fails to account for common human patterns and character structures found in real-world passwords.
+---
 
-In response to these shortcomings, the paper proposed an alternative metric called PQI (Password Quality Indicator), which uses a different mathematical approach. This idea was further evolved by the development of zxcvbn (https://dropbox.tech/security/zxcvbn-realistic-password-strength-estimation), a password strength estimator that incorporates pattern recognition and common password structures.
+## Table of Contents
+- [The Problem](#the-problem)  
+- [The Process](#the-process)  
+- [Features](#features)  
+- [Installation & Usage](#installation--usage)  
+- [Improvements](#improvements)  
+- [License](#license)  
 
-However, despite these advancements, I found no significant work that leveraged machine learning as a core methodology for password strength evaluation. This observation inspired me to develop a machine learning–based password strength classification tool. The aim was not only to compare its performance against traditional methods like Shannon Entropy, but also to evaluate how it stands up to more modern approaches such as zxcvbn.
+---
 
-# The Process
-As the goal of the project was to develop a model that classifies password strength, the only logical starting point was to find suitable training data. I came across a password strength classifier dataset on Kaggle (https://www.kaggle.com/datasets/bhavikbb/password-strength-classifier-dataset), which includes two columns: one for the password itself and one for its associated strength — weak (0), medium (1), or strong (2).
+## The Problem
 
-Using this dataset, I first wrote simple code to read and sanitise the data. I then carried out feature engineering — the process of transforming raw data into interpretable features that can be used by a machine learning model during training. This can also be thought of as creating metadata about each password that provides additional context and supports pattern recognition for the model to improve its accuracy (generally the accuracy is tied to the number and complexity of features provided).
+During my dissertation project ([CSC3094 Password Auditing Tool](https://github.com/Pr0xy08/CSC3094-Password-Auditing-Tool)), one of my goals was to measure password strength.  
 
-The specific features I chose to extract for each password were:
-- Length
-- Lowercase character count
-- Uppercase character count
-- Digit count
-- Special character count
-- Unique character count
-- Repeated character count
-- Ratios for each of the above where relevant
+In the course of research, I came across a paper ([IEEE 2010](https://ieeexplore.ieee.org/document/5635948)) highlighting the limitations of Shannon Entropy—a widely used metric for estimating password strength. Shannon Entropy is based on mathematical randomness but fails to account for common human patterns and character structures present in real-world passwords.  
 
-In addition to these, I included randomness features:
-- Shannon entropy
-- Normalised entropy
-- Character diversity
+The paper proposed an alternative metric, **PQI (Password Quality Indicator)**, which used a different mathematical approach. This idea later evolved into **zxcvbn** ([Dropbox Security Blog](https://dropbox.tech/security/zxcvbn-realistic-password-strength-estimation)), a password strength estimator that incorporates pattern recognition and common password structures.  
 
-I also incorporated structural features such as:
-- Presence of sequential characters
-- Presence of repeated characters
-- Whether the password is mixed case
-- Whether it is alphanumeric
-- Whether it contains a year
-- Whether it matches a common password (based on the top 10,000 most popular passwords)
-- The length of the longest sequence of digits
-- The number of character type transitions
+However, I found little significant research using **machine learning** as the primary methodology for password strength evaluation. This motivated me to build a machine learning–based password strength classifier. The aim was not only to compare its performance with Shannon Entropy, but also to evaluate how it compares to modern approaches such as zxcvbn.
 
-Following this I begun the training of the first rendition of the model, this was using a Random Forest Algorithm via Scikit-learn (https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) which makes use of the combination of multiple decision tree's to produce an output. After viewing the results of this It was clear something was wrong, this was due to the accuracy of the model being almost 100%. This was concerning as often it can infere that instead of traning itself the model finds a direct correclation within the dataset between the passwords and their strength. To solve this I instead adopted a different (but similar) dataset which incorporated more real-world data instead (https://github.com/binhbeinfosec/password-dataset). This was strucuted and classified the passwords in a very similar way (0, 1, 2) which was helpful as I didnt have to tweak my codebase too much. And after doing so and including some balancing to the data via SMOTE (https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html) I witnessed much better accuarcy results of around 70% which is more normal.
+---
 
-Continuing on from this now that I had a trained model with a reliable dataset I though it would be benefical to test different machine learning algorithms to see if there was an improvement of accuracy. Here is a small outcome/report for each of the 4 chosen, with that being LightGBM being the most accurate with a Macro f1 Score of 74%:
+## The Process
 
-Random Forest:
-Accuracy - 0.92076
-Macro f1 - 0.727
-Precision (0) - 0.99 (1) - 0.42 (2) - 0.73
-Recall    (0) - 0.94 (1) - 0.70 (2) - 0.79
-f1 score  (0) - 0.97 (1) - 0.46 (2) - 0.76
+To build a classification model, the first step was to source suitable training data.  
+I used the [Kaggle Password Strength Classifier Dataset](https://www.kaggle.com/datasets/bhavikbb/password-strength-classifier-dataset), which contains two columns: the password itself and its labelled strength — weak (0), medium (1), or strong (2).  
 
-LightGBM:
-Accuracy - 0.92733
-Macro f1 - 0.737
-Precision (0) - 0.99 (1) - 0.34 (2) - 0.74
-Recall    (0) - 0.94 (1) - 0.78 (2) - 0.81
-f1 score  (0) - 0.96 (1) - 0.47 (2) - 0.78
+After sanitising the dataset, I performed **feature engineering**: transforming raw passwords into interpretable features that a model can learn from. This involved creating metadata about each password to capture structure, randomness, and composition.  
 
-XGBoost:
-Accuracy - 0.92076
-Macro f1 - 0.732
-Precision (0) - 0.99 (1) - 0.32 (2) - 0.75
-Recall    (0) - 0.93 (1) - 0.80 (2) - 0.82
-f1 score  (0) - 0.96 (1) - 0.46 (2) - 0.78
+### Extracted Features
+- **General features**: length, lowercase/uppercase/digit/special character counts, unique count, repeated count, and their ratios.  
+- **Randomness features**: Shannon entropy, normalised entropy, character diversity.  
+- **Structural features**: sequential characters, repeated characters, mixed case, alphanumeric mix, presence of years, common password check, longest digit sequence, and character type transitions.  
 
-CatBoost:
-Accuracy - 0.91883
-Macro f1 - 0.733
-Precision (0) - 1.00 (1) - 0.32 (2) - 0.75
-Recall    (0) - 0.93 (1) - 0.81 (2) - 0.83
-f1 score  (0) - 0.96 (1) - 0.45 (2) - 0.79
+Initially, I trained a **Random Forest classifier** using Scikit-learn. However, it produced near-100% accuracy, which indicated **overfitting** — the model was exploiting direct correlations in the dataset rather than learning general patterns.  
 
-Finally after selecting LightGBM algorithm I made sure to save the model to easily retrieve it and then produced a simple frontend application that which takes a password as an input, extracts all the features required from the inputted password, then passes both the password and its features to the saved model in which the model returns a strength score of 0, 1 or 2.
-# Features
+To resolve this, I switched to a [different dataset](https://github.com/binhbeinfosec/password-dataset) with more realistic password samples, restructured in the same 0–2 strength format. I also balanced the dataset using [SMOTE](https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html). This yielded more realistic accuracy (~70%).  
 
-# Usage Guide
+Next, I experimented with different machine learning algorithms to benchmark performance. Below are the results (macro F1-score is most relevant due to class imbalance):
 
-# License
+### Model Comparison
+**Random Forest**  
+- Accuracy: 0.9208  
+- Macro F1: 0.727  
+
+**LightGBM**  
+- Accuracy: 0.9273  
+- Macro F1: 0.737  
+
+**XGBoost**  
+- Accuracy: 0.9208  
+- Macro F1: 0.733  
+
+**CatBoost**  
+- Accuracy: 0.9188  
+- Macro F1: 0.734  
+
+**Result:** LightGBM achieved the best balance, with a macro F1-score of **74%**.  
+
+Finally, I saved the trained LightGBM model for reuse and developed a **Streamlit frontend application**. This allows a user to input a password, extract features, and receive a prediction of weak, medium, or strong, along with additional insights.
+
+---
+
+## Features
+
+### `model.py`
+- Functions for feature extraction from raw passwords.  
+- Data sanitisation and feature application.  
+- Model training with LightGBM.  
+- Optionally generates a feature importance graph (`feature_importance.png`).  
+
+### `main.py`
+- Provides a GUI built with Streamlit.  
+- Allows users to input a password and view:  
+  - Predicted strength classification (weak/medium/strong).  
+  - Model confidence probability.  
+  - Extracted password features in a table.  
+  - Suggestions for improving the password.  
+- Includes a button to display the model’s feature importance graph.
+
+---
+
+## Installation & Usage
+
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/Pr0xy08/AI-Powered-Password-Strength-Checker.git
+2. Navigate into the project directory:
+   ``` bash
+   cd AI-Powered-Password-Strength-Checker
+3. Install dependencies:
+   ``` bash
+   pip install -r requirements.txt
+4. Run the streamlit application:
+   ``` bash
+   streamlit run main.py
+5. Open the local URL (http://localhost:8501) in your browser.
+6. Enter a password to see results.
+7. To retrain the model, run:
+   ``` bash
+   python model.py
+
+---
+
+## Improvements
+Given more time and resources, the following improvements could be implemented:
+
+- Use a larger dataset, potentially by combining multiple sources.
+
+- Engineer additional features for richer analysis.
+
+- Remove redundant features not prioritised by the model.
+
+- Perform hyperparameter tuning for improved accuracy.
+
+- Enhance the GUI with better interactivity and visualisation.
+
+- Deploy the tool as a live web service or browser extension.
+
+- Compare results against modern grading systems such as zxcvbn.
+
+- Transition from classification (weak/medium/strong) to a continuous linear scoring system.
+
+- Add multilingual and character support for broader accessibility.
+
+--- 
+
+## License
+
+MIT License
+
+Copyright (c) 2025 Drew Wandless
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+
 
