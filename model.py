@@ -20,12 +20,10 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from imblearn.over_sampling import SMOTE
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
+import matplotlib.pyplot as plt
 
 
-# -----------------------
 # Feature Extraction Funcs
-# -----------------------
-
 def shannon_entropy(pwd: str) -> float:
     """Compute Shannon entropy of a password."""
     if not pwd:
@@ -123,9 +121,7 @@ def is_common_password(pwd: str) -> int:
     return int(pwd in COMMON_PASSWORDS)
 
 
-# -----------------------
 # Feature Engineering
-# -----------------------
 def extract_features(pwd: str) -> pd.DataFrame:
     """extract the features of a given password, calls all above functions included"""
     # General 7
@@ -163,9 +159,7 @@ def extract_features(pwd: str) -> pd.DataFrame:
     return pd.DataFrame([features])
 
 
-# -----------------------
 # Train and save model
-# -----------------------
 def train_and_save(data_path="data.csv",
                    model_path="password_strength_classifier.pkl"):  # https://github.com/binhbeinfosec/password-dataset
     """reads test date, apply feature extraction on test data, then trains data model with said data"""
@@ -181,11 +175,11 @@ def train_and_save(data_path="data.csv",
     # Split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
-    # SMOTE
+    # apply SMOTE classification balancing
     smote = SMOTE(random_state=42)
     X_train_res, y_train_res = smote.fit_resample(X_train, y_train)
 
-    # Train
+    # Train model with lightGBM
     model = lgb.LGBMClassifier(
         n_estimators=500,
         learning_rate=0.05,
@@ -206,7 +200,7 @@ def train_and_save(data_path="data.csv",
 
     """
     # Optional - If uncommented will create a graph of feature importance, showing which features the model prioritses in training
-    importances = lgb_model.feature_importances_
+    importances = model.feature_importances_
     features = X_train_res.columns
 
     # Sort feature importance
